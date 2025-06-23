@@ -13,25 +13,128 @@
         .tt-table { border-collapse: collapse; margin-bottom: 12px;}
         .tt-table td,.tt-table th { border: 1px solid #444; padding: 2px 8px; min-width:30px;}
         .tt-table th { background: #232344;}
+        #tooltip {
+            position: fixed;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            min-width: 240px;
+            max-width: 700px;
+            background: rgba(30,30,40,0.96);
+            color: #ffe;
+            border-radius: 12px;
+            font-size: 18px;
+            padding: 12px 22px;
+            text-align: center;
+            box-shadow: 0 4px 24px 0 #0009;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.18s;
+        }
+        #tooltip.visible { opacity: 1; }
     </style>
 </head>
 <body>
     <div id="toolbar">
-        <button class="gate-btn" onclick="addGate('INPUT')">INPUT</button>
-        <button class="gate-btn" onclick="addGate('AND')">AND</button>
-        <button class="gate-btn" onclick="addGate('NAND')">NAND</button>
-        <button class="gate-btn" onclick="addGate('OR')">OR</button>
-        <button class="gate-btn" onclick="addGate('NOR')">NOR</button>
-        <button class="gate-btn" onclick="addGate('XOR')">XOR</button>
-        <button class="gate-btn" onclick="addGate('XNOR')">XNOR</button>
-        <button class="gate-btn" onclick="addGate('NOT')">NOT</button>
-        <button class="gate-btn" onclick="addGate('OUTPUT')">OUTPUT</button>
-        <button class="save-btn" onclick="saveCircuit()">Save</button>
-        <button class="load-btn" onclick="document.getElementById('loadfile').click()">Load</button>
+        <button class="gate-btn" data-gate="INPUT"  onclick="addGate('INPUT')">INPUT</button>
+        <button class="gate-btn" data-gate="AND"    onclick="addGate('AND')">AND</button>
+        <button class="gate-btn" data-gate="NAND"   onclick="addGate('NAND')">NAND</button>
+        <button class="gate-btn" data-gate="OR"     onclick="addGate('OR')">OR</button>
+        <button class="gate-btn" data-gate="NOR"    onclick="addGate('NOR')">NOR</button>
+        <button class="gate-btn" data-gate="XOR"    onclick="addGate('XOR')">XOR</button>
+        <button class="gate-btn" data-gate="XNOR"   onclick="addGate('XNOR')">XNOR</button>
+        <button class="gate-btn" data-gate="NOT"    onclick="addGate('NOT')">NOT</button>
+        <button class="gate-btn" data-gate="OUTPUT" onclick="addGate('OUTPUT')">OUTPUT</button>
+        <button class="save-btn" onclick="saveCircuit()" id="saveBtn">Save</button>
+        <button class="load-btn" onclick="document.getElementById('loadfile').click()" id="loadBtn">Load</button>
         <input type="file" id="loadfile" accept=".json" style="display:none" />
     </div>
     <canvas id="canvas" width="1050" height="600"></canvas>
     <div id="truth-tables"></div>
+    <div id="tooltip"></div>
     <script src="logic.js"></script>
+    <script>
+    // --- TOOLTIP logic ---
+    const tooltip = document.getElementById('tooltip');
+    const GATE_DESCRIPTIONS = {
+        INPUT:  "Input switch. Click to toggle between 0 (OFF) and 1 (ON). Used as logic source.",
+        OUTPUT: "Output indicator. Shows the result of the connected logic as 0 (OFF) or 1 (ON).",
+        AND:    "AND gate: Output is 1 only if ALL inputs are 1. Otherwise, output is 0.",
+        NAND:   "NAND gate: Output is 0 only if ALL inputs are 1. Otherwise, output is 1.",
+        OR:     "OR gate: Output is 1 if ANY input is 1. Output is 0 only if ALL inputs are 0.",
+        NOR:    "NOR gate: Output is 1 only if ALL inputs are 0. Otherwise, output is 0.",
+        XOR:    "XOR gate: Output is 1 if the number of inputs at 1 is ODD. Otherwise, output is 0.",
+        XNOR:   "XNOR gate: Output is 1 if the number of inputs at 1 is EVEN. Otherwise, output is 0.",
+        NOT:    "NOT gate: Output is the opposite of the input (inverts the signal)."
+    };
+    // Save/Load
+    const SAVEDESC = "Save: Download the circuit as a .json file to your computer.";
+    const LOADDESC = "Load: Upload a previously saved .json circuit file and restore it here.";
+
+    function showTooltip(msg) {
+        tooltip.innerText = msg;
+        tooltip.classList.add('visible');
+    }
+    function hideTooltip() {
+        tooltip.classList.remove('visible');
+    }
+    // Gombok tooltipje
+    document.querySelectorAll('.gate-btn').forEach(btn => {
+        btn.addEventListener('mouseenter', e => {
+            const type = btn.getAttribute('data-gate');
+            if (type && GATE_DESCRIPTIONS[type]) showTooltip(GATE_DESCRIPTIONS[type]);
+        });
+        btn.addEventListener('mouseleave', hideTooltip);
+        btn.addEventListener('touchstart', e => {
+            const type = btn.getAttribute('data-gate');
+            if (type && GATE_DESCRIPTIONS[type]) {
+                showTooltip(GATE_DESCRIPTIONS[type]);
+                setTimeout(hideTooltip, 1800);
+            }
+        });
+    });
+    document.getElementById('saveBtn').addEventListener('mouseenter', () => showTooltip(SAVEDESC));
+    document.getElementById('saveBtn').addEventListener('mouseleave', hideTooltip);
+    document.getElementById('saveBtn').addEventListener('touchstart', e => { showTooltip(SAVEDESC); setTimeout(hideTooltip, 1800); });
+    document.getElementById('loadBtn').addEventListener('mouseenter', () => showTooltip(LOADDESC));
+    document.getElementById('loadBtn').addEventListener('mouseleave', hideTooltip);
+    document.getElementById('loadBtn').addEventListener('touchstart', e => { showTooltip(LOADDESC); setTimeout(hideTooltip, 1800); });
+
+    // Canvas komponensek
+    let hoveredGateId = null;
+    canvas.addEventListener('mousemove', function(e){
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        let found = false;
+        for (const g of gates) {
+            if (x>g.x-32 && x<g.x+32 && y>g.y-30 && y<g.y+30) {
+                if (hoveredGateId !== g.id) {
+                    hoveredGateId = g.id;
+                    showTooltip(GATE_DESCRIPTIONS[g.type] || "");
+                }
+                found = true;
+                break;
+            }
+        }
+        if (!found && hoveredGateId) {
+            hoveredGateId = null;
+            hideTooltip();
+        }
+    });
+    canvas.addEventListener('mouseleave', function(){hoveredGateId=null;hideTooltip();});
+    // Mobil támogatás: koppintás kapura kiírja a tooltipet 2 másodpercig
+    canvas.addEventListener('touchstart', function(e){
+        const rect = canvas.getBoundingClientRect();
+        let tx = e.touches[0].clientX - rect.left, ty = e.touches[0].clientY - rect.top;
+        for (const g of gates) {
+            if (tx>g.x-32 && tx<g.x+32 && ty>g.y-30 && ty<g.y+30) {
+                showTooltip(GATE_DESCRIPTIONS[g.type] || "");
+                setTimeout(hideTooltip,2000);
+                break;
+            }
+        }
+    });
+    </script>
 </body>
 </html>
