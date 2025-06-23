@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Logic Circuit Simulator</title>
+    <style>
+        body { background: #161624; color: #fff; font-family: sans-serif; margin:0; }
+        #toolbar { padding: 12px; background: #232344; }
+        .gate-btn, .save-btn, .load-btn { margin-right: 8px; padding: 8px 12px; border-radius: 7px; border: none; background: #353585; color: #fff; cursor: pointer; }
+        #canvas { border: 1px solid #333; background: #222; display: block; margin: 0 auto; }
+        #truth-tables { max-width: 1050px; margin: 20px auto 10px auto; background: #202035; border-radius: 10px; padding: 18px; font-size: 16px;}
+        .tt-title { font-weight:bold; margin-top: 14px; margin-bottom: 3px; }
+        .tt-table { border-collapse: collapse; margin-bottom: 12px;}
+        .tt-table td,.tt-table th { border: 1px solid #444; padding: 2px 8px; min-width:30px;}
+        .tt-table th { background: #232344;}
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <button class="gate-btn" onclick="addGate('INPUT')">INPUT</button>
+        <button class="gate-btn" onclick="addGate('AND')">AND</button>
+        <button class="gate-btn" onclick="addGate('NAND')">NAND</button>
+        <button class="gate-btn" onclick="addGate('OR')">OR</button>
+        <button class="gate-btn" onclick="addGate('NOR')">NOR</button>
+        <button class="gate-btn" onclick="addGate('XOR')">XOR</button>
+        <button class="gate-btn" onclick="addGate('XNOR')">XNOR</button>
+        <button class="gate-btn" onclick="addGate('NOT')">NOT</button>
+        <button class="gate-btn" onclick="addGate('OUTPUT')">OUTPUT</button>
+        <button class="save-btn" onclick="saveCircuit()">Save</button>
+        <button class="load-btn" onclick="document.getElementById('loadfile').click()">Load</button>
+        <input type="file" id="loadfile" accept=".json" style="display:none" />
+    </div>
+    <canvas id="canvas" width="1050" height="600"></canvas>
+    <div id="truth-tables"></div>
+    <script src="logic.js"></script>
+</body>
+</html>
