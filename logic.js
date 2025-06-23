@@ -378,33 +378,42 @@ function removeLabelInput() {
 }
 
 function runLogic() {
+    // 1. Minden kaput kivéve az INPUT-ot előkészítünk (töröljük a value-t)
     for (const g of gates) if (g.type!=='INPUT') g.value = false;
-    for (let s=0; s<8; ++s) {
+
+    // 2. Addig ismételjük a kiértékelést, amíg nincs változás (fixpoint)
+    let changed;
+    do {
+        changed = false;
         for (const g of gates) {
-            if (g.type==='INPUT') continue;
+            if (g.type === 'INPUT') continue;
             let inputs = [];
-            for (let i=0; i<g.inputs; ++i) {
-                let wire = wires.find(w=>w.to===g.id && w.toInput===i);
+            for (let i = 0; i < g.inputs; ++i) {
+                let wire = wires.find(w => w.to === g.id && w.toInput === i);
                 let val = false;
                 if (wire) {
-                    let fromGate = gates.find(x=>x.id===wire.from);
+                    let fromGate = gates.find(x => x.id === wire.from);
                     val = fromGate ? fromGate.value : false;
                 }
                 inputs.push(val);
             }
-            if (g.type==='AND')   g.value = inputs.length ? inputs.every(Boolean) : false;
-            if (g.type==='NAND')  g.value = inputs.length ? !inputs.every(Boolean) : false;
-            if (g.type==='OR')    g.value = inputs.length ? inputs.some(Boolean) : false;
-            if (g.type==='NOR')   g.value = inputs.length ? !inputs.some(Boolean) : false;
-            if (g.type==='XOR')   g.value = inputs.length ? (inputs.filter(Boolean).length % 2 === 1) : false;
-            if (g.type==='XNOR')  g.value = inputs.length ? (inputs.filter(Boolean).length % 2 === 0) : false;
-            if (g.type==='NOT')   g.value = inputs.length ? !inputs[0] : true;
-            if (g.type==='OUTPUT') g.value = inputs.length ? !!inputs[0] : false;
+            let prev = g.value;
+            if (g.type === 'AND')   g.value = inputs.length ? inputs.every(Boolean) : false;
+            if (g.type === 'NAND')  g.value = inputs.length ? !inputs.every(Boolean) : false;
+            if (g.type === 'OR')    g.value = inputs.length ? inputs.some(Boolean) : false;
+            if (g.type === 'NOR')   g.value = inputs.length ? !inputs.some(Boolean) : false;
+            if (g.type === 'XOR')   g.value = inputs.length ? (inputs.filter(Boolean).length % 2 === 1) : false;
+            if (g.type === 'XNOR')  g.value = inputs.length ? (inputs.filter(Boolean).length % 2 === 0) : false;
+            if (g.type === 'NOT')   g.value = inputs.length ? !inputs[0] : true;
+            if (g.type === 'OUTPUT') g.value = inputs.length ? !!inputs[0] : false;
+            if (g.value !== prev) changed = true;
         }
-    }
+    } while (changed);
+
     draw();
     showTruthTables();
 }
+
 
 function showTruthTables() {
     let html = '';
